@@ -1,0 +1,36 @@
+[Unit]
+Description=BR Eleições 2026 Node server
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=br-eleicoes
+Group=br-eleicoes
+WorkingDirectory=/opt/br-eleicoes-2026
+Environment=NODE_ENV=production
+Environment=PORT=8000
+Environment=HOST=127.0.0.1
+Environment=BR_ELEICOES_CACHE_DIR=/var/lib/br-eleicoes-2026/cache
+Environment=BR_ELEICOES_MAX_RESULT_CACHE_FILES=10000
+Environment=BR_ELEICOES_MAX_RESULT_CACHE_BYTES=2147483648
+Environment=BR_ELEICOES_RATE_LIMIT=120
+Environment=BR_ELEICOES_EXPENSIVE_RATE_LIMIT=12
+Environment=BR_ELEICOES_EXPENSIVE_CONCURRENCY=1
+ExecStart=/usr/bin/node /opt/br-eleicoes-2026/brazil-eleicoes-2026-server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/br-eleicoes-2026/cache
+UMask=027
+MemoryMax=2G
+CPUQuota=200%
+TasksMax=64
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

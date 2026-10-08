@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; img-src 'self' data:; font-src 'self'; media-src 'none'; frame-src 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self' 'sha256-sYPF28mXHcd1YksXJLmb9gw4zT8780FVVWfnSsijStc='; connect-src 'self' https://resultados.tse.jus.br https://cdn.tse.jus.br; upgrade-insecure-requests">
+<title>Brasil Eleições 2026 — resultados oficiais</title>
+<link rel="stylesheet" href="brazil-eleicoes-2026.css">
+</head>
+<body>
+<header><div class="logo">BR <i>ELEIÇÕES</i></div><div class="tag">RESULTADOS OFICIAIS · 2026</div><nav class="header-nav" aria-label="Seções do site"><button class="header-tab active" id="navHome" type="button">Home</button><button class="header-tab" id="navPanel" type="button">Painel</button><button class="header-tab" id="navGraphs" type="button">Gráficos</button></nav></header>
+<main>
+<aside id="homeAside" class="site-aside home-aside">
+<h1>Consultar candidato</h1>
+<div class="muted home-lead">Escolha um candidato e depois refine o recorte por Estado, Cidade, Zona ou Bairro.</div>
+<label class="muted" for="candidateSearch">Candidato</label>
+<input id="candidateSearch" class="searchbox" type="search" autocomplete="off" placeholder="Digite o nome ou número">
+<div id="candidateSuggestions" class="candidate-suggestions" role="listbox" aria-label="Sugestões de candidatos"></div>
+<div id="candidateSelected" class="candidate-selected muted">Nenhum candidato selecionado.</div>
+
+<div id="candidateFilters" class="candidate-filters" hidden>
+<label class="muted" for="candidateState">Estado</label>
+<select id="candidateState"></select>
+<label class="muted" for="candidateCity">Cidade</label>
+<select id="candidateCity" disabled><option value="">Selecione um estado</option></select>
+<div class="muted section-label home-scope-label">Zona eleitoral</div>
+<div class="zonegrid" id="candidateZoneGrid"></div>
+<div class="muted section-label neighborhood-label">Bairro</div>
+<input id="candidateNeighborhoodSearch" class="searchbox" type="search" placeholder="Digite um bairro" disabled>
+<div id="candidateNeighborhoods" class="neighborhoods"></div>
+</div>
+<div class="note" id="candidateWarning" hidden></div>
+</aside>
+<aside id="panelAside" class="site-aside">
+<h1 id="cityTitle">Brasil</h1>
+<label class="muted" for="state">Estado</label>
+<select id="state"></select>
+<div class="muted">Eleições Gerais de 2026 · 1º turno</div>
+
+<label class="muted" for="city">Cidade</label>
+<select id="city"></select>
+
+<label class="muted" for="office">Cargo</label>
+<select id="office">
+<option value="presidente">Presidente</option>
+<option value="governador">Governador</option>
+<option value="senador">Senador</option>
+<option value="deputadoFederal">Deputado Federal</option>
+<option value="deputadoEstadual">Deputado Estadual</option>
+</select>
+
+<div class="metricgrid">
+<div class="metric"><strong>5.571</strong><span>municípios</span></div><div class="metric"><strong>2.641</strong><span>zonas eleitorais</span></div>
+<div class="metric"><strong>10.074*</strong><span>locais de votação</span></div>
+<div class="metric"><strong>52.062*</strong><span>seções eleitorais</span></div>
+</div>
+
+<div class="muted section-label">Zona eleitoral</div>
+<div class="zonegrid" id="zoneGrid"></div>
+<div id="manualZone"><input id="zoneInput" class="searchbox" inputmode="numeric" placeholder="Número da zona"><button id="applyZone" class="zone zone-apply">Aplicar</button></div>
+<div class="muted section-label neighborhood-label">Bairro</div>
+<input id="neighborhoodSearch" class="searchbox" type="search" placeholder="Digite um bairro">
+<div id="neighborhoods" class="neighborhoods"></div>
+<div id="selection" class="muted selection"></div>
+
+<div class="note" id="dataNote"><b>Escopo:</b> Brasil. Escolha um estado e uma cidade para filtrar por zona ou bairro. Os resultados vêm dos arquivos oficiais do TSE.</div>
+</aside>
+
+<section>
+<div class="view-panel active" id="homeView">
+<div class="top">
+<div><h2 id="candidateResultTitle">Consulta de candidato</h2><div class="muted" id="candidateResultNote">Selecione um candidato para começar.</div></div>
+<div class="total"><span>Votos no recorte</span><strong id="candidateResultVotes">—</strong></div>
+</div>
+<div id="candidateResultCard" class="candidate-result-card">
+<div class="candidate-result-empty">Escolha um candidato no painel à esquerda.</div>
+</div>
+<div class="source">Fonte: Tribunal Superior Eleitoral (TSE). Os votos apresentados são obtidos dos mesmos arquivos oficiais de resultados usados no Painel.</div>
+</div>
+<div class="view-panel" id="panelView">
+<div class="top">
+<div><h2 id="title"></h2><div class="muted" id="note"></div></div>
+<div class="total"><span>Votos válidos</span><strong id="valid"></strong></div>
+</div>
+<div id="rows"></div>
+<div class="source">Fonte: Tribunal Superior Eleitoral (TSE). Resultados do 1º turno de 2026. O painel usa os arquivos oficiais por município e zona e não estima votos.</div>
+</div>
+
+<div class="view-panel" id="graphsView">
+<div class="graph-intro"><h2>Gráficos</h2><div class="muted" id="graphScope">Visualização dos mesmos dados do painel, com os 5 candidatos mais votados no recorte atual.</div></div>
+<div id="graphContent" class="graph-grid">
+<div class="graph-card"><h3>Distribuição dos Top 5</h3><div class="graph-subtitle">Participação proporcional entre os cinco candidatos mais votados.</div><div id="pieWrap" class="pie-wrap"><div class="graph-empty">Aguardando dados.</div></div><div id="pieLegend" class="chart-legend"></div></div>
+<div class="graph-card"><h3>Top 5 candidatos</h3><div class="graph-subtitle">Comparação dos votos no mesmo recorte selecionado no painel.</div><div id="barChart" class="bar-chart"><div class="graph-empty">Aguardando dados.</div></div></div><div class="graph-card"><h3>Top 5 partidos</h3><div class="graph-subtitle">Soma dos votos dos candidatos por partido no mesmo recorte selecionado.</div><div id="partyChart" class="bar-chart"><div class="graph-empty">Aguardando dados.</div></div></div>
+</div>
+</div>
+</section>
+</main>
+<script>
+const TSE_BASE='https://resultados.tse.jus.br/oficial/ele2026';
+const MUNICIPIOS_CONFIG=`${TSE_BASE}/6259/config/mun-e006259-cm.json`;
+const CONFIG_CACHE_KEY='br-eleicoes-2026-municipios-v3';
+const ZONE_CACHE_KEY='br-eleicoes-2026-zones-v2';
+const PLEITO='3220';
+const RESULT_CACHE_KEY='br-eleicoes-2026-result-v6';
+const CACHE_TTL=24*60*60*1000;
+const LOCAIS_URL='https://cdn.tse.jus.br/estatistica/sead/odsele/eleitorado_locais_votacao/eleitorado_local_votacao_2026.zip';
+const NEIGHBORHOOD_CACHE_KEY='br-eleicoes-2026-bairros-v3';
+const STATES=[
+ ['AC','Acre'],['AL','Alagoas'],['AP','Amapá'],['AM','Amazonas'],['BA','Bahia'],['CE','Ceará'],['DF','Distrito Federal'],['ES','Espírito Santo'],['GO','Goiás'],['MA','Maranhão'],['MT','Mato Grosso'],['MS','Mato Grosso do Sul'],['MG','Minas Gerais'],['PA','Pará'],['PB','Paraíba'],['PR','Paraná'],['PE','Pernambuco'],['PI','Piauí'],['RJ','Rio de Janeiro'],['RN','Rio Grande do Norte'],['RS','Rio Grande do Sul'],['RO','Rondônia'],['RR','Roraima'],['SC','Santa Catarina'],['SP','São Paulo'],['SE','Sergipe'],['TO','Tocantins']
+];
+const STATE_NAME=Object.fromEntries(STATES.map(x=>x));
+const CITIES=[];
+const CITY_BY_KEY=new Map();
+const FALLBACK={
+ presidente:{title:'Presidente da República',election:'6257',cargo:'0001'},
+ governador:{title:'Governador',election:'6259',cargo:'0003'},
+ senador:{title:'Senador',election:'6259',cargo:'0005'},
+ deputadoFederal:{title:'Deputado Federal',election:'6259',cargo:'0006'},
+ deputadoEstadual:{title:'Deputado Estadual',election:'6259',cargo:'0007'},
+ deputadoDistrital:{title:'Deputado Distrital',election:'6259',cargo:'0008'}
+};
+let selectedState='';
+let selectedCity=null;
+let selectedZone='all';
+let selectedNeighborhood='';
+let candidateSelected=null;
+let candidateState='';
+let candidateCity=null;
+let candidateZone='all';
+let candidateNeighborhood='';
+let candidateSearchTimer=null;
+let candidateRenderSequence=0;
+let municipalityConfigLoaded=false;
+let configLoadPromise=null;
+const ZONE_LOAD_PROMISES=new Map();
+const RESULT_CACHE=new Map();
+
+const fmt=n=>Number(n||0).toLocaleString('pt-BR');
+const pct=n=>Number(n||0).toFixed(2).replace('.',',');
+const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function arr(v){return Array.isArray(v)?v:(v&&typeof v==='object'?[v]:[]);}
+function readLocal(key){try{const x=JSON.parse(localStorage.getItem(key)||'null');if(x&&Date.now()-x.ts<CACHE_TTL)return x.data;}catch(_e){}return null;}
+function writeLocal(key,data){try{localStorage.setItem(key,JSON.stringify({ts:Date.now(),data}));}catch(_e){}}
+
+function parseMunicipalityConfig(raw){
+ const cities=[];
+ const seen=new Set();
+ for(const abr of arr(raw?.abr)){
+   const uf=String(abr?.cd||'').trim().toUpperCase();
+   if(!STATE_NAME[uf]) continue;
+   for(const mu of arr(abr?.mu)){
+     const code=String(mu?.cd||'').trim().padStart(5,'0');
+     const name=String(mu?.nm||'').trim();
+     if(!/^\d{5}$/.test(code)||!name) continue;
+     // EA12 is the municipality dictionary. In the 2026 publication it identifies
+     // The 2026 EA12 municipality configuration supplies the municipality zone list in `z`.
+     const rawZones=Array.isArray(mu?.z)?mu.z:(Array.isArray(mu?.zon)?mu.zon:[]);
+     const zones=[...new Set(rawZones.map(z=>parseInt(String((z&&typeof z==='object')?(z.cd??z.codigo??z.zona??''):z??''),10)).filter(Number.isFinite))].sort((a,b)=>a-b);
+     const key=uf+'|'+code;
+     if(seen.has(key)) continue;
+     seen.add(key);
+     cities.push({uf,code,name,zones});
+   }
+ }
+ return cities;
+}
+
+async function loadMunicipios(){
+ if(municipalityConfigLoaded) return;
+ if(configLoadPromise) return configLoadPromise;
+ configLoadPromise=(async()=>{
+   // Backend is the canonical local source. This avoids stale browser caches and
+   // avoids any EA16/arquivo-urna discovery requests from the frontend.
+   try{
+     const api=await fetch('/api/municipios',{cache:'no-store'});
+     if(api.ok){
+       const data=await api.json();
+       if(Array.isArray(data)&&data.length>=5000){
+         writeLocal(CONFIG_CACHE_KEY,data);
+         installCities(data);
+         municipalityConfigLoaded=true;
+         return;
+       }
+     }
+   }catch(_e){}
+   const cached=readLocal(CONFIG_CACHE_KEY);
+   if(Array.isArray(cached)&&cached.length>=5000){installCities(cached);municipalityConfigLoaded=true;return;}
+   try{
+     const r=await fetch(MUNICIPIOS_CONFIG,{cache:'no-store'});
+     if(!r.ok) throw new Error('TSE configuração HTTP '+r.status);
+     const raw=await r.json();
+     const parsed=parseMunicipalityConfig(raw);
+     if(parsed.length<5000) throw new Error('A configuração do TSE retornou apenas '+parsed.length+' municípios.');
+     writeLocal(CONFIG_CACHE_KEY,parsed);
+     installCities(parsed);
+     municipalityConfigLoaded=true;
+   }catch(e){
+     municipalityConfigLoaded=false;
+     document.getElementById('dataNote').innerHTML='<b>Não foi possível carregar a configuração de municípios:</b> '+esc(e.message)+'. Verifique a conexão com o TSE ou inicie o server.js.';
+     throw e;
+   }
+ })();
+ return configLoadPromise;
+}
+function installCities(items){
+ CITIES.length=0; CITY_BY_KEY.clear();
+ for(const c of items){CITIES.push({...c,zones:Array.isArray(c.zones)?c.zones:[]});CITY_BY_KEY.set(c.uf+'|'+c.code,CITIES[CITIES.length-1]);}
+ CITIES.sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+}
+function citiesForState(uf){return CITIES.filter(c=>c.uf===uf).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));}
+
+async function loadZonesForState(uf){
+ // Zones are already materialized by the backend from EA12 `mu.z` for all 5,571 municipalities.
+ // No EA16, arquivo-urna or zone probing is performed here.
+ await loadMunicipios();
+ const missing=citiesForState(uf).filter(c=>!Array.isArray(c.zones)||!c.zones.length);
+ if(missing.length) throw new Error('Há municípios sem zonas materializadas no índice local: '+missing.slice(0,5).map(c=>c.name).join(', '));
+ return;
+}
+function initStates(){
+ const sel=document.getElementById('state');
+ sel.innerHTML='<option value="">Brasil</option>'+STATES.map(([uf,name])=>`<option value="${uf}">${esc(name)} (${uf})</option>`).join('');
+ sel.value=selectedState;
+}
+function initCities(){
+ const sel=document.getElementById('city');
+ if(!selectedState){sel.disabled=true;sel.innerHTML='<option value="">Todos os municípios</option>';return;}
+ const cities=citiesForState(selectedState);
+ sel.disabled=false;
+ sel.innerHTML='<option value="">Todos os municípios</option>'+cities.map(c=>`<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+ sel.value=selectedCity?.code||'';
+}
+function currentCargoKey(){
+ const key=document.getElementById('office').value;
+ if(selectedState==='DF' && key==='deputadoEstadual') return 'deputadoDistrital';
+ return key;
+}
+function refreshOffices(){
+ const sel=document.getElementById('office');
+ const old=sel.value;
+ const options=selectedState==='DF' ? [
+  ['presidente','Presidente'],['governador','Governador'],['senador','Senador'],['deputadoFederal','Deputado Federal'],['deputadoEstadual','Deputado Distrital']
+ ] : [
+  ['presidente','Presidente'],['governador','Governador'],['senador','Senador'],['deputadoFederal','Deputado Federal'],['deputadoEstadual','Deputado Estadual']
+ ];
+ sel.innerHTML=options.map(([v,n])=>`<option value="${v}">${n}</option>`).join('');
+ sel.value=options.some(x=>x[0]===old)?old:'presidente';
+}
+
+function renderZones(){
+ const grid=document.getElementById('zoneGrid'),manual=document.getElementById('manualZone');
+ if(!selectedCity){
+   grid.innerHTML='<span class="muted">Selecione uma cidade para ver as zonas.</span>';manual.style.display='none';return;
+ }
+ const zones=selectedCity.zones||[];
+ if(!zones.length){grid.innerHTML='<span class="muted">Nenhuma zona encontrada para esta cidade.</span>';manual.style.display='none';return;}
+ if(selectedZone!=='all'&&!zones.includes(Number(selectedZone)))selectedZone='all';
+ manual.style.display='none';
+ grid.innerHTML=`<button class="zone ${selectedZone==='all'?'active':''}" data-zone="all">Todas</button>`+zones.map(z=>`<button class="zone ${String(z)===String(selectedZone)?'active':''}" data-zone="${z}">Zona ${z}</button>`).join('');
+ grid.querySelectorAll('.zone').forEach(b=>b.onclick=()=>{
+   selectedZone=b.dataset.zone;
+   if(selectedNeighborhood&&selectedZone!=='all'){
+     const entry=neighborhoodRowsForCity().find(x=>norm(x.name)===norm(selectedNeighborhood));
+     if(!entry?.zones.includes(Number(selectedZone))) selectedNeighborhood='';
+   }
+   document.getElementById('selection').textContent='';
+   renderZones();renderNeighborhoods();render();
+ });
+}
+function neighborhoodRowsForCity(){
+ const key=selectedCity?.uf+'|'+selectedCity?.code;
+ const rows=(NEIGHBORHOOD_BY_CITY.get(key)||[]);
+ return rows.map(x=>({name:x.name,zones:x.zones.map(Number).filter(Number.isFinite)}));
+}
+function renderNeighborhoods(){
+ const input=document.getElementById('neighborhoodSearch'),box=document.getElementById('neighborhoods');
+ const isCity=!!selectedCity;
+ input.disabled=!isCity;
+ input.placeholder=isCity?'Digite um bairro':'Selecione uma cidade';
+ if(!isCity){box.innerHTML='<div class="muted panel-message">Selecione uma cidade para pesquisar bairros.</div>';return;}
+ const q=norm(input.value);
+ const allRows=neighborhoodRowsForCity();
+ const rows=allRows.filter(r=>!q||norm(r.name).includes(q));
+ if(!allRows.length){box.innerHTML='<div class="muted panel-message">Nenhum bairro encontrado para esta cidade.</div>';return;}
+ box.innerHTML=rows.map(r=>`<button class="neighborhood" data-n="${esc(r.name)}" data-zones="${esc(r.zones.join(','))}"><span>${esc(r.name)}</span><span class="zbadge">${r.zones.length===1?'Zona '+r.zones[0]:r.zones.length+' zonas'}</span></button>`).join('');
+ box.querySelectorAll('.neighborhood').forEach(b=>b.onclick=async()=>{
+   selectedNeighborhood=b.dataset.n;
+   const zones=b.dataset.zones.split(',').filter(Boolean).map(Number);
+   if(selectedZone!=='all'&&!zones.includes(Number(selectedZone))) selectedZone='all';
+   const scopeZones=selectedZone==='all'?zones:[Number(selectedZone)];
+   document.getElementById('selection').innerHTML=`Bairro: <b>${esc(selectedNeighborhood)}</b> · ${scopeZones.length===1?'Zona '+scopeZones[0]:scopeZones.length+' zonas agregadas'}`;
+   renderZones();
+   await render();
+ });
+}
+
+function updateUIForScope(){
+ const cityTitle=document.getElementById('cityTitle');
+ if(!selectedState){cityTitle.textContent='Brasil';document.getElementById('dataNote').innerHTML='<b>Escopo atual:</b> Brasil · Presidente. Selecione um estado para habilitar Cidade e Zona.';}
+ else if(!selectedCity){cityTitle.textContent=STATE_NAME[selectedState];document.getElementById('dataNote').innerHTML=`<b>Escopo atual:</b> ${esc(STATE_NAME[selectedState])} (${selectedState}). Selecione uma cidade para habilitar a Zona Eleitoral.`;}
+ else {cityTitle.textContent=selectedCity.name;document.getElementById('dataNote').innerHTML=`<b>Escopo atual:</b> ${esc(STATE_NAME[selectedState])} → ${esc(selectedCity.name)}${selectedNeighborhood?' → Bairro '+esc(selectedNeighborhood):(selectedZone==='all'?'':' → Zona '+esc(selectedZone))}. ${selectedNeighborhood?'O bairro reúne as zonas associadas aos locais de votação cadastrados.':'Recorte: estado + cidade + zona.'}`;}
+ initCities();renderZones();renderNeighborhoods();
+}
+
+function resultCacheKey(key, zoneOverride=null){
+ const d=FALLBACK[key];
+ const z=zoneOverride===null?(selectedZone==='all'?'ALL':String(selectedZone)):String(zoneOverride);
+ return [d.election, d.cargo, selectedState||'BR', selectedCity?.code||'ALL', z].join('|');
+}
+function urlFor(key,zoneOverride=null){
+ const d=FALLBACK[key];
+ if(!selectedState){
+   if(key!=='presidente') throw new Error('Selecione um estado para este cargo.');
+   return `${TSE_BASE}/${d.election}/dados/br/br-c${d.cargo}-e${d.election.padStart(6,'0')}-u.json`;
+ }
+ const uf=selectedState.toLowerCase();
+ let stem=uf;
+ if(selectedCity) stem+=selectedCity.code;
+ const z=zoneOverride===null?selectedZone:zoneOverride;
+ if(selectedCity&&z!=='all') stem+='-z'+String(z).padStart(4,'0');
+ return `${TSE_BASE}/${d.election}/dados/${uf}/${stem}-c${String(d.cargo).padStart(4,'0')}-e${String(d.election).padStart(6,'0')}-u.json`;
+}
+function parseTSE(raw,key){
+ const cargo=(raw.carg||[]).find(c=>String(c.cd).padStart(4,'0')===FALLBACK[key].cargo)||(raw.carg||[])[0];
+ const rows=[];
+ for(const agr of (cargo?.agr||[])) for(const par of (agr.par||[])) for(const cand of (par.cand||[])){
+   const status=String(cand.dvt||'').trim();
+   rows.push({nome:cand.nmu||cand.nm||'',partido:par.sg||'',numero:String(cand.n??''),votos:Number(cand.vap||0),percentual:Number(String(cand.pvap||'0').replace(',','.')),status,valid:status===''||/^válido(?:\s|$)/i.test(status)});
+ }
+ // EA20 `v.vv` is the official total of valid votes. `v.tvn` is not the
+ // valid-vote total; using it here was the main source of the wrong totalizer.
+ const validos=Number(raw?.v?.vv??0);
+ const validRows=rows.filter(x=>x.valid);
+ const denominator=validRows.reduce((a,x)=>a+x.votos,0);
+ validRows.forEach(x=>x.percentual=denominator?x.votos/denominator*100:0);
+ return {rows:validRows.sort((a,b)=>b.votos-a.votos||a.nome.localeCompare(b.nome,'pt-BR')),validos,comparecimento:Number(raw.e?.c??0),secoes:Number(raw.s?.st??0),secoesTotal:Number(raw.s?.ts??0),final:raw.and==='f'||raw.tf==='s'};
+}
+async function fetchJson(url,tries=2){
+ let last;
+ for(let attempt=0;attempt<tries;attempt++){
+   try{
+     const r=await fetch(url,{cache:'no-store'});
+     if(r.ok)return await r.json();
+     let msg='HTTP '+r.status;
+     try{const er=await r.json();if(er?.error)msg=er.error;}catch(_e){}
+     if(r.status===404||r.status===400||r.status===403)throw new Error(msg);
+     last=new Error(msg);
+   }catch(e){last=e;if(attempt+1<tries)await new Promise(r=>setTimeout(r,350*(attempt+1)));}
+ }
+ throw last||new Error('Falha ao carregar JSON');
+}
+async function fetchTSEScope(key,zoneOverride=null){
+ const cacheKey=resultCacheKey(key,zoneOverride);
+ if(RESULT_CACHE.has(cacheKey))return RESULT_CACHE.get(cacheKey);
+ const persisted=readLocal(RESULT_CACHE_KEY);
+ if(persisted?.[cacheKey]){RESULT_CACHE.set(cacheKey,persisted[cacheKey]);return persisted[cacheKey];}
+ const d=FALLBACK[key];
+ let raw;
+ // With Node/server.js use the local cache/proxy. When the HTML is opened
+ // directly with double-click (file://), use the official TSE JSON directly.
+ // This keeps the no-Node version functional without probing invalid URLs.
+ if(location.protocol==='http:'||location.protocol==='https:'){
+   try{
+     const apiParams=new URLSearchParams({election:d.election,cargo:d.cargo,uf:selectedState||'br'});
+     if(selectedCity)apiParams.set('municipio',selectedCity.code);
+     if(zoneOverride!==null)apiParams.set('zona',String(zoneOverride));
+     raw=await fetchJson('/api/result?'+apiParams.toString());
+   }catch(apiErr){
+     raw=await fetchJson(urlFor(key,zoneOverride));
+   }
+ }else{
+   raw=await fetchJson(urlFor(key,zoneOverride));
+ }
+ if(raw?.error)throw new Error(raw.error);
+ const parsed=parseTSE(raw,key);
+ RESULT_CACHE.set(cacheKey,parsed);
+ const all=persisted||{};all[cacheKey]=parsed;
+ const keys=Object.keys(all);if(keys.length>80)delete all[keys[0]];
+ writeLocal(RESULT_CACHE_KEY,all);
+ return parsed;
+}
+function mergeResults(results){
+ const byNumber=new Map();
+ let validos=0,comparecimento=0,secoes=0,secoesTotal=0,final=true;
+ for(const r of results){
+   validos+=r.validos;comparecimento+=r.comparecimento;secoes+=r.secoes;secoesTotal+=r.secoesTotal;final=final&&r.final;
+   for(const x of r.rows){
+     const k=x.numero||norm(x.nome);
+     const old=byNumber.get(k);
+     if(old) old.votos+=x.votos; else byNumber.set(k,{...x});
+   }
+ }
+ const rows=[...byNumber.values()].sort((a,b)=>b.votos-a.votos||a.nome.localeCompare(b.nome,'pt-BR'));
+ const total=rows.reduce((a,x)=>a+x.votos,0);
+ rows.forEach(x=>x.percentual=total?x.votos/total*100:0);
+ return {rows,validos,comparecimento,secoes,secoesTotal,final};
+}
+async function fetchTSE(key){
+ const entry=selectedNeighborhood?neighborhoodRowsForCity().find(x=>norm(x.name)===norm(selectedNeighborhood)):null;
+ const zones=entry?.zones||[];
+ const explicitZone=selectedZone==='all'?null:Number(selectedZone);
+
+ // A selected Zona always wins over the Bairro's list of associated zones.
+ // This makes Bairro + Zona request exactly one zone-specific result.
+ if(explicitZone!==null&&Number.isFinite(explicitZone)){
+   if(!selectedNeighborhood||!zones.length||zones.includes(explicitZone)){
+     return fetchTSEScope(key,explicitZone);
+   }
+ }
+
+ if(!selectedNeighborhood||!zones.length) return fetchTSEScope(key);
+ if(zones.length===1) return fetchTSEScope(key,zones[0]);
+ const results=await Promise.all(zones.map(z=>fetchTSEScope(key,z)));
+ return mergeResults(results);
+}
+
+let renderSequence=0;
+function renderLoading(key){
+ const d=FALLBACK[key];document.getElementById('title').textContent=d.title+(selectedState?` · ${STATE_NAME[selectedState]}`:'');document.getElementById('note').textContent='Consultando resultados oficiais…';document.getElementById('valid').textContent='carregando';document.getElementById('rows').innerHTML='<div class="row"><div class="muted">Consultando apenas o recorte selecionado. Resultados já consultados ficam em cache local.</div></div>';
+}
+function scopeLabel(){if(!selectedState)return'Brasil';if(!selectedCity)return STATE_NAME[selectedState];if(selectedNeighborhood)return `${STATE_NAME[selectedState]} · ${selectedCity.name} · Bairro ${selectedNeighborhood}`;return `${STATE_NAME[selectedState]} · ${selectedCity.name}${selectedZone==='all'?'':` · Zona ${selectedZone}`}`;}
+function renderResult(key,r){
+ const d=FALLBACK[key],label=scopeLabel();document.getElementById('title').textContent=`${d.title}${selectedNeighborhood?' · '+selectedNeighborhood:(selectedZone==='all'?'':` · Zona ${selectedZone}`)}`;document.getElementById('note').textContent=`1º turno · ${label} · ${r.secoes.toLocaleString('pt-BR')}/${r.secoesTotal.toLocaleString('pt-BR')} seções totalizadas${r.final?' · totalização final':''}`;document.getElementById('valid').textContent=fmt(r.validos)+' votos válidos';const max=Math.max(1,...r.rows.map(x=>x.votos));document.getElementById('rows').innerHTML=r.rows.map(x=>`<div class="row"><div class="name"><div><span class="candidate">${esc(x.nome)}</span><span class="party">${esc(x.partido)}</span><span class="num">nº ${esc(x.numero)}</span></div><div class="votes">${fmt(x.votos)} · ${pct(x.percentual)}%</div></div><div class="bar"><div class="fill" style="width:${(x.votos/max*100).toFixed(2)}%"></div></div></div>`).join('');
+ updateGraphs(key,r);
+}
+function chartPalette(){return ['var(--chart-1)','var(--chart-2)','var(--chart-3)','var(--chart-4)','var(--chart-5)','var(--chart-6)','var(--chart-7)','var(--chart-8)'];}
+function updateGraphs(key,r){
+ const top=(r?.rows||[]).slice(0,5);
+ const partyMap=new Map();
+ for(const x of (r?.rows||[])){
+   const party=String(x.partido||'').trim()||'Sem partido informado';
+   partyMap.set(party,(partyMap.get(party)||0)+Number(x.votos||0));
+ }
+ const parties=[...partyMap.entries()]
+   .map(([partido,votos])=>({partido,votos}))
+   .sort((a,b)=>b.votos-a.votos||a.partido.localeCompare(b.partido,'pt-BR'))
+   .slice(0,5);
+ const pieWrap=document.getElementById('pieWrap'),legend=document.getElementById('pieLegend'),bars=document.getElementById('barChart'),partyBars=document.getElementById('partyChart'),scope=document.getElementById('graphScope');
+ if(!pieWrap||!legend||!bars||!partyBars)return;
+ scope.textContent=`${FALLBACK[key].title} · ${scopeLabel()}. Os gráficos usam os mesmos votos válidos exibidos no painel.`;
+ if(!top.length){
+   pieWrap.innerHTML='<div class="graph-empty">Nenhum dado disponível para este recorte.</div>';
+   legend.innerHTML='';
+   bars.innerHTML='<div class="graph-empty">Nenhum dado disponível para este recorte.</div>';
+   partyBars.innerHTML='<div class="graph-empty">Nenhum dado disponível para este recorte.</div>';
+   return;
+ }
+ const total=top.reduce((sum,x)=>sum+Number(x.votos||0),0)||1;
+ let cursor=0;const stops=[];const palette=chartPalette();
+ top.forEach((x,i)=>{
+   const start=cursor/total*100;cursor+=Number(x.votos||0);const end=cursor/total*100;
+   stops.push(`${palette[i]} ${start.toFixed(4)}% ${end.toFixed(4)}%`);
+ });
+ pieWrap.innerHTML=`<div class="pie" style="background:conic-gradient(${stops.join(',')})" aria-label="Gráfico de pizza com os cinco candidatos mais votados"></div>`;
+ legend.innerHTML=top.map((x,i)=>{
+   const share=Number(x.votos||0)/total*100;
+   return `<div class="legend-item"><span class="legend-dot" style="background:${palette[i]}"></span><span class="legend-name" title="${esc(x.nome)}">${esc(x.nome)}</span><span class="legend-value">${fmt(x.votos)} · ${pct(share)}%</span></div>`;
+ }).join('');
+ const max=Math.max(1,...top.map(x=>Number(x.votos||0)));
+ bars.innerHTML=top.map((x,i)=>{
+   const width=Number(x.votos||0)/Math.max(1,Number(r.validos||0))*100;
+   return `<div class="bar-row"><div class="bar-label" title="${esc(x.nome)}">${esc(x.nome)}</div><div class="bar-track"><div class="bar-fill-chart" style="width:${Math.min(100,width).toFixed(2)}%;background:${palette[i]}"></div></div></div>`;
+ }).join('');
+
+ partyBars.innerHTML=parties.length?parties.map((x,i)=>{
+   const width=Number(x.votos||0)/Math.max(1,Number(r.validos||0))*100;
+   return `<div class="bar-row"><div class="bar-label" title="${esc(x.partido)}">${esc(x.partido)}</div><div class="bar-track"><div class="bar-fill-chart" style="width:${Math.min(100,width).toFixed(2)}%;background:${palette[i]}"></div></div></div>`;
+ }).join(''):'<div class="graph-empty">Nenhum partido informado para este recorte.</div>';
+}
+function setSiteView(view){
+ const home=document.getElementById('homeView'),panel=document.getElementById('panelView'),graphs=document.getElementById('graphsView');
+ const homeAside=document.getElementById('homeAside'),panelAside=document.getElementById('panelAside');
+ const navHome=document.getElementById('navHome'),navPanel=document.getElementById('navPanel'),navGraphs=document.getElementById('navGraphs');
+ const isHome=view==='home',isGraphs=view==='graphs';
+ home.classList.toggle('active',isHome);panel.classList.toggle('active',!isHome&&!isGraphs);graphs.classList.toggle('active',isGraphs);
+ homeAside.classList.toggle('hidden',!isHome);panelAside.classList.toggle('hidden',isHome);
+ navHome.classList.toggle('active',isHome);navPanel.classList.toggle('active',!isHome&&!isGraphs);navGraphs.classList.toggle('active',isGraphs);
+ if(isHome) renderCandidateHome();
+}
+
+function candidateDisplay(c){return `${esc(c.nome)} <span class="candidate-meta">${esc(c.cargoNome)} · ${esc(c.uf)} · nº ${esc(c.numero)}</span>`;}
+function candidateScopeZones(){
+ const entry=candidateNeighborhood?candidateNeighborhoodRows().find(x=>norm(x.name)===norm(candidateNeighborhood)):null;
+ if(candidateZone!=='all')return entry?.zones.includes(Number(candidateZone))?[Number(candidateZone)]:[];
+ return entry?.zones||[];
+}
+function candidateNeighborhoodRows(){
+ const key=candidateCity?.uf+'|'+candidateCity?.code;
+ return (NEIGHBORHOOD_BY_CITY.get(key)||[]).map(x=>({name:x.name,zones:x.zones.map(Number).filter(Number.isFinite)}));
+}
+function renderCandidateStateOptions(){
+ const sel=document.getElementById('candidateState');
+ sel.innerHTML='<option value="">Selecione um estado</option>'+STATES.map(([uf,name])=>`<option value="${uf}">${esc(name)} (${uf})</option>`).join('');
+ sel.value=candidateState;
+}
+function candidateStateIsValid(){return !!candidateSelected&& (candidateSelected.uf==='BR'||candidateSelected.uf===candidateState);}
+function candidateWarning(message){
+ const el=document.getElementById('candidateWarning');
+ el.hidden=!message;el.innerHTML=message?`<b>Atenção:</b> ${esc(message)}`:'';
+}
+function renderCandidateCities(){
+ const sel=document.getElementById('candidateCity');
+ if(!candidateState){sel.disabled=true;sel.innerHTML='<option value="">Selecione um estado</option>';candidateCity=null;return;}
+ const cities=citiesForState(candidateState);sel.disabled=false;
+ sel.innerHTML='<option value="">Todos os municípios</option>'+cities.map(c=>`<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+ sel.value=candidateCity?.code||'';
+}
+function renderCandidateZones(){
+ const grid=document.getElementById('candidateZoneGrid');
+ if(!candidateCity){grid.innerHTML='<span class="muted">Selecione uma cidade para ver as zonas.</span>';return;}
+ const zones=candidateCity.zones||[];
+ if(!zones.length){grid.innerHTML='<span class="muted">Nenhuma zona encontrada para esta cidade.</span>';return;}
+ if(candidateZone!=='all'&&!zones.includes(Number(candidateZone)))candidateZone='all';
+ grid.innerHTML=`<button class="zone ${candidateZone==='all'?'active':''}" data-czone="all">Todas</button>`+zones.map(z=>`<button class="zone ${String(z)===String(candidateZone)?'active':''}" data-czone="${z}">Zona ${z}</button>`).join('');
+ grid.querySelectorAll('[data-czone]').forEach(b=>b.onclick=()=>{candidateZone=b.dataset.czone;if(candidateNeighborhood&&candidateZone!=='all'){const entry=candidateNeighborhoodRows().find(x=>norm(x.name)===norm(candidateNeighborhood));if(!entry?.zones.includes(Number(candidateZone)))candidateNeighborhood='';}renderCandidateNeighborhoods();renderCandidateZones();renderCandidateHome();});
+}
+function renderCandidateNeighborhoods(){
+ const input=document.getElementById('candidateNeighborhoodSearch'),box=document.getElementById('candidateNeighborhoods');
+ if(!candidateCity){input.disabled=true;box.innerHTML='<div class="muted panel-message">Selecione uma cidade para pesquisar bairros.</div>';return;}
+ input.disabled=false;
+ const key=candidateCity.uf+'|'+candidateCity.code;
+ if(!NEIGHBORHOOD_BY_CITY.has(key)){box.innerHTML='<div class="muted panel-message">Carregando bairros…</div>';ensureNeighborhoodsForSelectedCityForCandidate().catch(()=>{});return;}
+ const q=norm(input.value),rows=candidateNeighborhoodRows().filter(r=>!q||norm(r.name).includes(q));
+ if(!rows.length){box.innerHTML='<div class="muted panel-message">Nenhum bairro corresponde à busca.</div>';return;}
+ box.innerHTML=rows.map(r=>`<button class="neighborhood ${norm(r.name)===norm(candidateNeighborhood)?'active':''}" data-cn="${esc(r.name)}" data-czones="${esc(r.zones.join(','))}"><span>${esc(r.name)}</span><span class="zbadge">${r.zones.length===1?'Zona '+r.zones[0]:r.zones.length+' zonas'}</span></button>`).join('');
+ box.querySelectorAll('[data-cn]').forEach(b=>b.onclick=()=>{candidateNeighborhood=b.dataset.cn;const zones=b.dataset.czones.split(',').filter(Boolean).map(Number);if(candidateZone!=='all'&&!zones.includes(Number(candidateZone)))candidateZone='all';renderCandidateNeighborhoods();renderCandidateZones();renderCandidateHome();});
+}
+async function ensureNeighborhoodsForSelectedCityForCandidate(){
+ if(!candidateCity)return;
+ const key=candidateCity.uf+'|'+candidateCity.code;
+ if(NEIGHBORHOOD_BY_CITY.has(key))return;
+ await buildNeighborhoodIndexBrowserForCity(candidateCity.uf,candidateCity.code);
+ renderCandidateNeighborhoods();
+}
+function renderCandidateSelection(){
+ const box=document.getElementById('candidateSelected'),filters=document.getElementById('candidateFilters');
+ filters.hidden=!candidateSelected;
+ if(!candidateSelected){box.textContent='Nenhum candidato selecionado.';return;}
+ box.innerHTML=`<b>${esc(candidateSelected.nome)}</b><br><span class="candidate-meta">${esc(candidateSelected.cargoNome)} · ${esc(candidateSelected.uf)} · nº ${esc(candidateSelected.numero)}</span>`;
+ renderCandidateStateOptions();renderCandidateCities();renderCandidateZones();renderCandidateNeighborhoods();
+}
+async function searchCandidateSuggestions(){
+ const input=document.getElementById('candidateSearch'),box=document.getElementById('candidateSuggestions'),q=input.value.trim();
+ if(q.length<2){box.innerHTML='';return;}
+ box.innerHTML='<div class="candidate-suggestion muted">Pesquisando candidatos…</div>';
+ try{
+   const r=await fetch('/api/candidates?q='+encodeURIComponent(q),{cache:'no-store'});if(!r.ok)throw new Error('Não foi possível carregar candidatos.');
+   const rows=await r.json();
+   box.innerHTML=rows.length?rows.map((c,i)=>`<button class="candidate-suggestion" type="button" data-ci="${i}">${candidateDisplay(c)}</button>`).join(''):'<div class="candidate-suggestion muted">Nenhum candidato encontrado.</div>';
+   box.querySelectorAll('[data-ci]').forEach(b=>b.onclick=()=>{candidateSelected=rows[Number(b.dataset.ci)];candidateState='';candidateCity=null;candidateZone='all';candidateNeighborhood='';document.getElementById('candidateSearch').value=candidateSelected.nome;box.innerHTML='';candidateWarning('');renderCandidateSelection();renderCandidateHome();});
+ }catch(e){box.innerHTML=`<div class="candidate-suggestion muted">${esc(e.message)}</div>`;}
+}
+async function fetchCandidateScope(zoneOverride=null){
+ const d={election:candidateSelected.election||((candidateSelected.cargo==='0001')?'6257':'6259'),cargo:candidateSelected.cargo};
+ const params=new URLSearchParams({election:d.election,cargo:d.cargo,uf:candidateState.toLowerCase()});
+ if(candidateCity)params.set('municipio',candidateCity.code);
+ if(zoneOverride!==null)params.set('zona',String(zoneOverride));
+ const r=await fetch('/api/result?'+params.toString(),{cache:'no-store'});if(!r.ok)throw new Error('Não foi possível carregar o resultado deste recorte.');return r.json();
+}
+function candidateFromRaw(raw){
+ const cargo=(raw?.carg||[]).find(c=>String(c.cd).padStart(4,'0')===candidateSelected.cargo)||(raw?.carg||[])[0];
+ for(const agr of (cargo?.agr||[]))for(const par of (agr.par||[]))for(const cand of (par.cand||[])){
+   if(String(cand.n??'')===String(candidateSelected.numero))return {votos:Number(cand.vap||0),percentual:Number(String(cand.pvap||'0').replace(',','.')),nome:cand.nmu||cand.nm||candidateSelected.nome,partido:par.sg||'',validos:Number(raw?.v?.vv??0),secoes:Number(raw?.s?.st??0),secoesTotal:Number(raw?.s?.ts??0)};
+ }
+ return {votos:0,percentual:0,nome:candidateSelected.nome,partido:'',validos:Number(raw?.v?.vv??0),secoes:Number(raw?.s?.st??0),secoesTotal:Number(raw?.s?.ts??0)};
+}
+function mergeCandidateRows(rows){const votos=rows.reduce((a,x)=>a+x.votos,0),validos=rows.reduce((a,x)=>a+x.validos,0),secoes=rows.reduce((a,x)=>a+x.secoes,0),secoesTotal=rows.reduce((a,x)=>a+x.secoesTotal,0);return {votos,validos,secoes,secoesTotal,percentual:validos?votos/validos*100:0};}
+async function renderCandidateHome(){
+ const seq=++candidateRenderSequence,title=document.getElementById('candidateResultTitle'),note=document.getElementById('candidateResultNote'),votes=document.getElementById('candidateResultVotes'),card=document.getElementById('candidateResultCard');
+ if(!candidateSelected){title.textContent='Consulta de candidato';note.textContent='Selecione um candidato para começar.';votes.textContent='—';card.innerHTML='<div class="candidate-result-empty">Escolha um candidato no painel à esquerda.</div>';return;}
+ if(!candidateState){title.textContent=candidateSelected.nome;note.textContent='Selecione um Estado para consultar os votos.';votes.textContent='—';card.innerHTML='<div class="candidate-result-empty">O recorte começa pelo Estado.</div>';return;}
+ if(!candidateStateIsValid()){candidateWarning(`${candidateSelected.nome} está registrado para ${candidateSelected.uf}, não para ${candidateState}.`);title.textContent=candidateSelected.nome;note.textContent='Candidato incompatível com o Estado selecionado.';votes.textContent='—';card.innerHTML='<div class="candidate-result-warning">O candidato selecionado não pertence ao Estado filtrado. Escolha outro Estado.</div>';return;}
+ candidateWarning('');title.textContent=candidateSelected.nome;
+ const stateName=STATE_NAME[candidateState]||candidateState;
+ let scope=stateName;if(candidateCity)scope+=' · '+candidateCity.name;if(candidateNeighborhood)scope+=' · Bairro '+candidateNeighborhood;else if(candidateZone!=='all')scope+=' · Zona '+candidateZone;
+ note.textContent=`${candidateSelected.cargoNome} · ${scope}`;votes.textContent='…';card.innerHTML='<div class="candidate-result-empty">Consultando resultados oficiais…</div>';
+ try{
+   const entry=candidateNeighborhood?candidateNeighborhoodRows().find(x=>norm(x.name)===norm(candidateNeighborhood)):null;
+   let zoneList=candidateZone==='all'?(entry?.zones||[]):[Number(candidateZone)];
+   if(!candidateCity)zoneList=[];
+   let merged;
+   if(zoneList.length){const raw=await Promise.all(zoneList.map(z=>fetchCandidateScope(z)));if(seq!==candidateRenderSequence)return;merged=mergeCandidateRows(raw.map(candidateFromRaw));}
+   else {const raw=await fetchCandidateScope(null);if(seq!==candidateRenderSequence)return;merged=mergeCandidateRows([candidateFromRaw(raw)]);}
+   if(seq!==candidateRenderSequence)return;
+   votes.textContent=fmt(merged.votos);
+   card.innerHTML=`<div class="candidate-result-main"><div><span class="candidate-result-name">${esc(candidateSelected.nome)}</span><span class="party">${esc(candidateSelected.cargoNome)} · ${esc(candidateSelected.uf)} · nº ${esc(candidateSelected.numero)}</span></div><div class="candidate-result-metrics"><div><strong>${fmt(merged.votos)}</strong><span>votos</span></div><div><strong>${pct(merged.percentual)}%</strong><span>dos votos válidos</span></div><div><strong>${fmt(merged.validos)}</strong><span>votos válidos no recorte</span></div></div></div>`;
+ }catch(e){if(seq!==candidateRenderSequence)return;votes.textContent='—';card.innerHTML=`<div class="candidate-result-warning">Não foi possível carregar este recorte: ${esc(e.message)}</div>`;}
+}
+function renderError(key,e){document.getElementById('title').textContent=FALLBACK[key].title;document.getElementById('note').textContent='Não foi possível carregar este recorte.';document.getElementById('valid').textContent='—';document.getElementById('rows').innerHTML=`<div class="row"><div class="candidate">Dados indisponíveis para este recorte</div><div class="muted error-detail">${esc(e.message)}. Nenhum voto é estimado.</div></div>`;}
+async function render(){
+ const sequence=++renderSequence;
+ const key=currentCargoKey();
+ renderLoading(key);
+ try{
+   const result=await fetchTSE(key);
+   if(sequence!==renderSequence)return;
+   renderResult(key,result);
+ }catch(e){
+   if(sequence!==renderSequence)return;
+   renderError(key,e);
+ }
+}
+async function selectState(uf){
+ selectedState=uf;selectedCity=null;selectedZone='all';selectedNeighborhood='';document.getElementById('neighborhoodSearch').value='';refreshOffices();
+ updateUIForScope();
+ if(selectedState){
+   document.getElementById('zoneGrid').innerHTML='<span class="muted">Carregando zonas…</span>';
+   try{await loadZonesForState(selectedState);}catch(_e){}
+   updateUIForScope();
+ }
+ await render();
+}
+async function selectCity(code){
+ selectedCity=code?CITY_BY_KEY.get(selectedState+'|'+code)||null:null;selectedZone='all';selectedNeighborhood='';document.getElementById('neighborhoodSearch').value='';
+ if(selectedState){
+   document.getElementById('zoneGrid').innerHTML='<span class="muted">Carregando zonas…</span>';
+   try{await loadZonesForState(selectedState);}catch(_e){}
+ }
+ updateUIForScope();
+ if(selectedCity&&NEIGHBORHOOD_BROWSER_LAZY) ensureNeighborhoodsForSelectedCity().catch(()=>{});
+ await render();
+}
+
+const NEIGHBORHOOD_BY_CITY=new Map();
+const NEIGHBORHOOD_LOADING=new Map();
+const NEIGHBORHOOD_BROWSER_LAZY=true;
+function u32(a,o){return (((a[o]??0)|((a[o+1]??0)<<8)|((a[o+2]??0)<<16)|((a[o+3]??0)<<24))>>>0);}
+function u16(a,o){return (a[o]??0)|((a[o+1]??0)<<8);}
+function parseZipCentralDirectory(buf,baseOffset,totalSize){
+ const a=new Uint8Array(buf); let eocd=-1;
+ for(let i=a.length-22;i>=0;i--) if(u32(a,i)===0x06054b50){eocd=i;break;}
+ if(eocd<0)throw new Error('ZIP: diretório central não encontrado.');
+ const count=u16(a,eocd+10),cdSize=u32(a,eocd+12),cdOffset=u32(a,eocd+16);
+ if(cdSize>50*1024*1024)throw new Error('ZIP: diretório central inesperadamente grande.');
+ return {count,cdSize,cdOffset,cdAbsolute:cdOffset,tailBase:baseOffset,totalSize};
+}
+async function fetchRange(url,range){
+ const r=await fetch(url,{cache:'no-store',headers:{Range:range}});
+ if(r.status!==206)throw new Error('O servidor do arquivo de bairros não permite leitura parcial (HTTP '+r.status+').');
+ return {response:r,buffer:await r.arrayBuffer()};
+}
+async function remoteZipDirectory(url){
+ const tailBytes=65557;
+ const {response,buffer}=await fetchRange(url,`bytes=-${tailBytes}`);
+ const meta=parseZipCentralDirectory(buffer,0,0);
+ const {buffer:cdBuf}=await fetchRange(url,`bytes=${meta.cdOffset}-${meta.cdOffset+meta.cdSize-1}`);
+ const a=new Uint8Array(cdBuf),entries=[];let p=0;
+ for(let i=0;i<meta.count;i++){
+   if(u32(a,p)!==0x02014b50)throw new Error('ZIP: entrada inválida.');
+   const method=u16(a,p+10),compSize=u32(a,p+20),size=u32(a,p+24),nameLen=u16(a,p+28),extraLen=u16(a,p+30),commentLen=u16(a,p+32),localOffset=u32(a,p+42);
+   const name=new TextDecoder('utf-8').decode(a.slice(p+46,p+46+nameLen));
+   entries.push({name,method,compSize,size,localOffset}); p+=46+nameLen+extraLen+commentLen;
+ }
+ return entries;
+}
+function csvFieldsFromLine(line,sep=';'){
+ const out=[];let cur='',q=false;
+ for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q;}else if(c===sep&&!q){out.push(cur);cur='';}else cur+=c;}
+ out.push(cur);return out;
+}
+function consumeCsvChunk(state,text,onRow){
+ state.buffer+=text;
+ let idx;
+ while((idx=state.buffer.indexOf('\n'))>=0){
+   let line=state.buffer.slice(0,idx);state.buffer=state.buffer.slice(idx+1);if(line.endsWith('\r'))line=line.slice(0,-1);
+   if(!line.trim())continue;
+   if(!state.header){state.header=csvFieldsFromLine(line.replace(/^\uFEFF/,'' )).map(x=>x.trim());continue;}
+   const vals=csvFieldsFromLine(line),row={};state.header.forEach((h,k)=>row[h]=vals[k]??'');onRow(row);
+ }
+}
+async function streamRemoteZipEntry(url,e,onRow){
+ // Read the local header first so we can request only the compressed member.
+ const {buffer:hb}=await fetchRange(url,`bytes=${e.localOffset}-${e.localOffset+29}`);
+ const h=new Uint8Array(hb);if(u32(h,0)!==0x04034b50)throw new Error('ZIP: cabeçalho local inválido.');
+ const nameLen=u16(h,26),extraLen=u16(h,28),start=e.localOffset+30+nameLen+extraLen,end=start+e.compSize-1;
+ const {response}=await fetchRange(url,`bytes=${start}-${end}`);
+ let stream=response.body;
+ if(e.method===8){if(typeof DecompressionStream==='undefined')throw new Error('Seu navegador não suporta descompressão ZIP em fluxo.');stream=stream.pipeThrough(new DecompressionStream('deflate-raw'));}
+ else if(e.method!==0)throw new Error('ZIP: método de compressão não suportado.');
+ const decoder=new TextDecoder('windows-1252');
+ const reader=stream.getReader();let state={buffer:'',header:null};
+ while(true){const {value,done}=await reader.read();if(done)break;consumeCsvChunk(state,decoder.decode(value,{stream:true}),onRow);}
+ consumeCsvChunk(state,decoder.decode(),onRow);
+ if(state.buffer.trim()&&state.header){const vals=csvFieldsFromLine(state.buffer),row={};state.header.forEach((h,k)=>row[h]=vals[k]??'');onRow(row);}
+}
+function zipEntriesForUf(entries,uf){
+ const up=String(uf||'').toUpperCase();
+ const matches=entries.filter(e=>{const n=String(e.name).toUpperCase();return new RegExp('(^|[/_\\\\-])'+up+'([._/\\\\-]|$)').test(n)||n.endsWith(up+'.CSV')||n.endsWith(up+'.TXT');});
+ return matches.length?matches:(entries.length===1?entries:[]);
+}
+async function buildNeighborhoodIndexBrowserForCity(uf,code){
+ const key=uf+'|'+code;
+ const entries=await remoteZipDirectory(LOCAIS_URL);
+ const csvEntries=entries.filter(e=>/\.csv$/i.test(e.name));
+ const wanted=zipEntriesForUf(csvEntries,uf);
+ if(!wanted.length)throw new Error('Não encontrei o arquivo de locais de votação de '+uf+' dentro do ZIP oficial.');
+ const map={};
+ for(const e of wanted){
+   await streamRemoteZipEntry(LOCAIS_URL,e,row=>{
+     const ruf=String(row.SG_UF||'').trim().toUpperCase(),rCode=String(row.CD_MUNICIPIO||'').trim().padStart(5,'0');
+     if(ruf!==uf||rCode!==code)return;
+     const bairro=String(row.NM_BAIRRO||'').trim(),zona=Number(row.NR_ZONA);
+     if(!bairro||!Number.isFinite(zona))return;
+     const nk=norm(bairro);if(!map[nk])map[nk]={name:bairro,zones:new Set()};map[nk].zones.add(zona);
+   });
+ }
+ const out=Object.values(map).map(x=>({name:x.name,zones:[...x.zones].sort((a,b)=>a-b)})).sort((a,b)=>norm(a.name).localeCompare(norm(b.name),'pt-BR'));
+ NEIGHBORHOOD_BY_CITY.set(key,out);
+ const cached=readLocal(NEIGHBORHOOD_CACHE_KEY)||{};cached[key]=out;writeLocal(NEIGHBORHOOD_CACHE_KEY,cached);
+ return out;
+}
+async function ensureNeighborhoodsForSelectedCity(){
+ if(!selectedCity||!NEIGHBORHOOD_BROWSER_LAZY)return true;
+ const key=selectedCity.uf+'|'+selectedCity.code;
+ if(NEIGHBORHOOD_BY_CITY.has(key))return true;
+ if(NEIGHBORHOOD_LOADING.has(key))return NEIGHBORHOOD_LOADING.get(key);
+ const p=buildNeighborhoodIndexBrowserForCity(selectedCity.uf,selectedCity.code).then(()=>{NEIGHBORHOOD_LOADING.delete(key);renderNeighborhoods();}).catch(e=>{NEIGHBORHOOD_LOADING.delete(key);console.warn(e);const box=document.getElementById('neighborhoods');box.innerHTML='<div class="muted panel-message">Não foi possível carregar os bairros desta cidade: '+esc(e.message)+'</div>';throw e;});
+ NEIGHBORHOOD_LOADING.set(key,p);return p;
+}
+function neighborhoodRowsForCity(){
+ const key=selectedCity?.uf+'|'+selectedCity?.code;
+ const rows=(NEIGHBORHOOD_BY_CITY.get(key)||[]);
+ return rows.map(x=>({name:x.name,zones:x.zones.map(Number).filter(Number.isFinite)}));
+}
+function renderNeighborhoods(){
+ const input=document.getElementById('neighborhoodSearch'),box=document.getElementById('neighborhoods');
+ const isCity=!!selectedCity;
+ input.disabled=!isCity;
+ input.placeholder=isCity?'Digite um bairro':'Selecione uma cidade';
+ if(!isCity){box.innerHTML='<div class="muted panel-message">Selecione uma cidade para pesquisar bairros.</div>';return;}
+ const key=selectedCity.uf+'|'+selectedCity.code;
+ if(NEIGHBORHOOD_BROWSER_LAZY&&!NEIGHBORHOOD_BY_CITY.has(key)){
+   box.innerHTML='<div class="muted panel-message">Carregando bairros…</div>';
+   ensureNeighborhoodsForSelectedCity().catch(()=>{});return;
+ }
+ const q=norm(input.value),allRows=neighborhoodRowsForCity(),rows=allRows.filter(r=>!q||norm(r.name).includes(q));
+ if(!allRows.length){box.innerHTML='<div class="muted panel-message">Nenhum bairro encontrado para esta cidade.</div>';return;}
+ if(!rows.length){box.innerHTML='<div class="muted panel-message">Nenhum bairro corresponde à busca.</div>';return;}
+ box.innerHTML=rows.map(r=>`<button class="neighborhood" data-n="${esc(r.name)}" data-zones="${esc(r.zones.join(','))}"><span>${esc(r.name)}</span><span class="zbadge">${r.zones.length===1?'Zona '+r.zones[0]:r.zones.length+' zonas'}</span></button>`).join('');
+ box.querySelectorAll('.neighborhood').forEach(b=>b.onclick=async()=>{
+   selectedNeighborhood=b.dataset.n;const zones=b.dataset.zones.split(',').filter(Boolean).map(Number);selectedZone=zones.length===1?String(zones[0]):'all';document.getElementById('selection').innerHTML=`Bairro: <b>${esc(selectedNeighborhood)}</b> · ${zones.length===1?'Zona '+zones[0]:zones.length+' zonas agregadas'}`;renderZones();await render();
+ });
+}
+async function loadNeighborhoodIndex(){
+ try{
+   const cached=readLocal(NEIGHBORHOOD_CACHE_KEY);
+   if(cached&&typeof cached==='object'){for(const [k,v] of Object.entries(cached))NEIGHBORHOOD_BY_CITY.set(k,v);}
+   if(NEIGHBORHOOD_BROWSER_LAZY){
+     // Do not download/decompress the national ZIP on startup. The browser
+     // loads only the UF/municipality data when a city is selected.
+     return;
+   }
+   let data=null;
+   if(location.protocol==='http:'||location.protocol==='https:'){
+     try{const r=await fetch('/api/neighborhoods',{cache:'no-store'});if(r.ok)data=await r.json();}catch(_e){}
+   }
+   if(data&&typeof data==='object'){
+     for(const [k,v] of Object.entries(data))NEIGHBORHOOD_BY_CITY.set(k,v);
+     writeLocal(NEIGHBORHOOD_CACHE_KEY,data);
+   }
+ }catch(e){
+   console.warn('Não foi possível carregar o índice nacional de bairros:',e);
+   document.getElementById('dataNote').innerHTML+='<br><span class="muted">Bairros: não foi possível carregar os dados oficiais neste navegador.</span>';
+ }
+}
+
+document.getElementById('state').addEventListener('change',e=>selectState(e.target.value));
+document.getElementById('city').addEventListener('change',e=>selectCity(e.target.value));
+document.getElementById('office').addEventListener('change',()=>{selectedNeighborhood='';document.getElementById('neighborhoodSearch').value='';document.getElementById('selection').textContent='';renderNeighborhoods();render();});
+document.getElementById('neighborhoodSearch').addEventListener('input',renderNeighborhoods);
+
+document.getElementById('candidateSearch').addEventListener('input',()=>{clearTimeout(candidateSearchTimer);candidateSearchTimer=setTimeout(searchCandidateSuggestions,180);});
+document.getElementById('candidateState').addEventListener('change',()=>{candidateState=document.getElementById('candidateState').value;candidateCity=null;candidateZone='all';candidateNeighborhood='';document.getElementById('candidateNeighborhoodSearch').value='';renderCandidateCities();renderCandidateZones();renderCandidateNeighborhoods();renderCandidateHome();});
+document.getElementById('candidateCity').addEventListener('change',()=>{candidateCity=document.getElementById('candidateCity').value?CITY_BY_KEY.get(candidateState+'|'+document.getElementById('candidateCity').value)||null:null;candidateZone='all';candidateNeighborhood='';document.getElementById('candidateNeighborhoodSearch').value='';renderCandidateZones();renderCandidateNeighborhoods();if(candidateCity)ensureNeighborhoodsForSelectedCityForCandidate().catch(()=>{});renderCandidateHome();});
+document.getElementById('candidateNeighborhoodSearch').addEventListener('input',renderCandidateNeighborhoods);
+document.getElementById('navHome').addEventListener('click',()=>setSiteView('home'));
+document.getElementById('navPanel').addEventListener('click',()=>setSiteView('panel'));
+document.getElementById('navGraphs').addEventListener('click',()=>setSiteView('graphs'));
+
+aSyncInit();
+async function aSyncInit(){
+ initStates();refreshOffices();initCities();renderZones();renderNeighborhoods();renderCandidateStateOptions();setSiteView('home');
+ document.getElementById('dataNote').innerHTML='<b>Carregando:</b> municípios, zonas e bairros oficiais do TSE.';
+ try{await loadMunicipios();await loadNeighborhoodIndex();updateUIForScope();await render();}catch(e){renderError('presidente',e);}
+}
+</script>
+</body>
+</html>

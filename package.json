@@ -1,0 +1,14 @@
+{
+  "name": "br-eleicoes-2026",
+  "version": "2.9.0",
+  "private": true,
+  "description": "BR Eleições 2026 — painel independente baseado nos dados oficiais do TSE",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "NODE_ENV=production node brazil-eleicoes-2026-server.js",
+    "start:dev": "NODE_ENV=development node brazil-eleicoes-2026-server.js"
+  }
+}

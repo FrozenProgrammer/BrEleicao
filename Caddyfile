@@ -1,0 +1,19 @@
+# BR Eleições 2026 — reverse proxy HTTPS
+# Replace example.com with the real domain.
+example.com {
+    encode gzip zstd
+
+    # Caddy is the only public-facing process. Node remains bound to 127.0.0.1.
+    reverse_proxy 127.0.0.1:8000
+
+    # Structured access logs with rotation. Ensure Caddy can write this path
+    # on the target Linux distribution, or change it to the provider's log path.
+    log {
+        output file /var/log/caddy/br-eleicoes-2026-access.log {
+            roll_size 20MiB
+            roll_keep 5
+            roll_keep_for 168h
+        }
+        format json
+    }
+}
